@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>来場登録 - 1Aコーナー</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      text-align: center;
+      padding: 40px 20px;
+      background-color: #f4f6f8;
+      margin: 0;
+    }
+    .card {
+      background: white;
+      padding: 32px 24px;
+      border-radius: 20px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+      max-width: 360px;
+      margin: 20px auto;
+    }
+    h2 { margin-top: 0; color: #333; font-size: 24px; }
+    button {
+      padding: 18px 24px;
+      font-size: 20px;
+      font-weight: bold;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 12px;
+      width: 100%;
+      cursor: pointer;
+      box-shadow: 0 4px 6px rgba(0,123,255,0.3);
+      transition: all 0.2s;
+    }
+    button:active { transform: scale(0.98); }
+    #message { margin-top: 24px; font-size: 18px; font-weight: bold; line-height: 1.4; }
+  </style>
+</head>
+<body>
+
+  <div class="card">
+    <h2>1A コーナー</h2>
+    <button id="submit-btn" onclick="sendVisit()">🎉 来場しました！</button>
+    <div id="message"></div>
+  </div>
+
+  <script>
+    // ★ご自身のGASのWebアプリURLに差し替えてください
+    const GAS_URL = "https://script.google.com/macros/s/YOUR_GAS_URL_HERE/exec";
+    
+    // ★コーナーID
+    const cornerId = "1a";
+
+    const btnElem = document.getElementById('submit-btn');
+    const msgElem = document.getElementById('message');
+
+    // GitHub Pages（直アクセス）なので iPad/Safari でも UUID が 100% 保持されます
+    function getUUID() {
+      let uuid = localStorage.getItem('festival_visitor_uuid');
+      if (!uuid) {
+        uuid = crypto.randomUUID();
+        localStorage.setItem('festival_visitor_uuid', uuid);
+      }
+      return uuid;
+    }
+
+    function sendVisit() {
+      btnElem.disabled = true;
+      btnElem.style.backgroundColor = "#ccc";
+      msgElem.innerText = "送信中...";
+      msgElem.style.color = "#666";
+
+      fetch(GAS_URL, {
+        method: "POST",
+        mode: "no-cors",
+        headers: { "Content-Type": "text/plain" },
+        body: JSON.stringify({ uuid: getUUID(), corner: cornerId })
+      })
+      .then(() => {
+        msgElem.innerText = "🎉 来場を記録しました！";
+        msgElem.style.color = "#28a745";
+      })
+      .catch(err => {
+        msgElem.innerText = "⚠️ 送信エラーが発生しました。";
+        msgElem.style.color = "#dc3545";
+        btnElem.disabled = false;
+        btnElem.style.backgroundColor = "#007bff";
+      });
+    }
+  </script>
+</body>
+</html>
