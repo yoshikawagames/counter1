@@ -94,31 +94,24 @@
     statusDiv.textContent = "送信中...";
     statusDiv.style.color = "#333";
 
-    // GASが最も確実に受け取れるフォームデータ形式 (payloadパラメータ)
-    const payloadData = JSON.stringify({
+    const formData = new URLSearchParams();
+    formData.append("payload", JSON.stringify({
       uuid: uuid,
       corner: corner
-    });
-
-    const formData = new URLSearchParams();
-    formData.append("payload", payloadData);
+    }));
 
     fetch(GAS_URL, {
       method: "POST",
+      mode: "no-cors",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded"
+      },
       body: formData
     })
-    .then(response => response.json())
-    .then(data => {
-      if (data.status === "success") {
-        statusDiv.textContent = "✅ 送信完了！";
-        statusDiv.style.color = "green";
-      } else if (data.status === "duplicate") {
-        statusDiv.textContent = "⚠️ 連打判定（3分間無効）";
-        statusDiv.style.color = "orange";
-      } else {
-        statusDiv.textContent = "❌ エラー: " + (data.message || "処理失敗");
-        statusDiv.style.color = "red";
-      }
+    .then(() => {
+      // no-cors のため、エラーが出ずにここに到達＝GASへの到達完了
+      statusDiv.textContent = "✅ 送信完了！";
+      statusDiv.style.color = "green";
       setTimeout(() => {
         btn.disabled = false;
         statusDiv.textContent = "";
