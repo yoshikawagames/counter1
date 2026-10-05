@@ -3,92 +3,127 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>来場登録 - 1Aコーナー</title>
+  <title>来場カウント</title>
   <style>
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      text-align: center;
-      padding: 40px 20px;
-      background-color: #f4f6f8;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
       margin: 0;
+      background-color: #f4f6f8;
     }
     .card {
       background: white;
-      padding: 32px 24px;
-      border-radius: 20px;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.08);
-      max-width: 360px;
-      margin: 20px auto;
+      padding: 2rem;
+      border-radius: 16px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      text-align: center;
+      max-width: 320px;
+      width: 90%;
     }
-    h2 { margin-top: 0; color: #333; font-size: 24px; }
+    h1 { margin-top: 0; color: #333; font-size: 1.5rem; }
     button {
-      padding: 18px 24px;
-      font-size: 20px;
-      font-weight: bold;
-      background-color: #007bff;
+      background-color: #007aff;
       color: white;
       border: none;
+      padding: 1rem 2rem;
+      font-size: 1.2rem;
+      font-weight: bold;
       border-radius: 12px;
-      width: 100%;
       cursor: pointer;
-      box-shadow: 0 4px 6px rgba(0,123,255,0.3);
-      transition: all 0.2s;
+      width: 100%;
+      margin-top: 1rem;
+      transition: background-color 0.2s;
     }
-    button:active { transform: scale(0.98); }
-    #message { margin-top: 24px; font-size: 18px; font-weight: bold; line-height: 1.4; }
+    button:active { background-color: #0056b3; }
+    button:disabled { background-color: #ccc; cursor: not-allowed; }
+    #status {
+      margin-top: 1rem;
+      font-weight: bold;
+      font-size: 1rem;
+      min-height: 1.5em;
+    }
   </style>
 </head>
 <body>
 
-  <div class="card">
-    <h2>1A コーナー</h2>
-    <button id="submit-btn" onclick="sendVisit()">🎉 来場しました！</button>
-    <div id="message"></div>
-  </div>
+<div class="card">
+  <h1 id="title">来場カウント</h1>
+  <p id="corner-display">コーナー: 確認中...</p>
+  <button id="btn" type="button">🎉 来場しました！</button>
+  <div id="status"></div>
+</div>
 
-  <script>
-    // ★ご自身のGASのWebアプリURLに差し替えてください
-    const GAS_URL = "https://script.google.com/macros/s/AKfycbwbVuJjocdxlPwEIF_0Aemhm4IKJ4zPMmFfQ4QH49Mjqd7jVAENS5euItGUodJqGvBi/exec";
+<script>
+  // ★ GASのデプロイURL
+  const GAS_URL = "https://script.google.com/macros/s/AKfycbxw89M9gLkbyJy4sS7b-q4-IuS0Cp4KY94IKfYf111PxySVEa1WfAxsT77wD6-_Opha/exec";
+
+  // UUID取得または生成 (永続化)
+  function getOrCreateUUID() {
+    let uuid = localStorage.getItem('visitor_uuid');
+    if (!uuid) {
+      uuid = 'uuid_' + Math.random().toString(36).substring(2) + Date.now().toString(36);
+      localStorage.setItem('visitor_uuid', uuid);
+    }
+    return uuid;
+  }
+
+  // URLパラメータ（?corner=1a など）またはデフォルト値からコーナーIDを取得
+  function getCornerId() {
+    const params = new URLSearchParams(window.location.search);
+    const corner = params.get('corner');
+    if (corner) return corner.toLowerCase();
     
-    // ★コーナーID
-    const cornerId = "1a";
+    // パラメータがない場合は、ファイル名やデフォルト("1a")から判断
+    return "1a"; 
+  }
 
-    const btnElem = document.getElementById('submit-btn');
-    const msgElem = document.getElementById('message');
+  const uuid = getOrCreateUUID();
+  const corner = getCornerId();
 
-    // GitHub Pages（直アクセス）なので iPad/Safari でも UUID が 100% 保持されます
-    function getUUID() {
-      let uuid = localStorage.getItem('festival_visitor_uuid');
-      if (!uuid) {
-        uuid = crypto.randomUUID();
-        localStorage.setItem('festival_visitor_uuid', uuid);
-      }
-      return uuid;
-    }
+  document.getElementById('corner-display').textContent = "コーナー: " + corner.toUpperCase();
 
-    function sendVisit() {
-      btnElem.disabled = true;
-      btnElem.style.backgroundColor = "#ccc";
-      msgElem.innerText = "送信中...";
-      msgElem.style.color = "#666";
+  const btn = document.getElementById('btn');
+  const statusDiv = document.getElementById('status');
 
-      fetch(GAS_URL, {
-        method: "POST",
-        mode: "no-cors",
-        headers: { "Content-Type": "text/plain" },
-        body: JSON.stringify({ uuid: getUUID(), corner: cornerId })
-      })
-      .then(() => {
-        msgElem.innerText = "🎉 来場を記録しました！";
-        msgElem.style.color = "#28a745";
-      })
-      .catch(err => {
-        msgElem.innerText = "⚠️ 送信エラーが発生しました。";
-        msgElem.style.color = "#dc3545";
-        btnElem.disabled = false;
-        btnElem.style.backgroundColor = "#007bff";
-      });
-    }
-  </script>
+  // ボタンクリック時の確実な処理
+  btn.onclick = function() {
+    btn.disabled = true;
+    statusDiv.textContent = "送信中...";
+    statusDiv.style.color = "#333";
+
+    const payload = JSON.stringify({
+      uuid: uuid,
+      corner: corner
+    });
+
+    fetch(GAS_URL, {
+      method: "POST",
+      mode: "no-cors", // GASへのクロスドメイン送信で必須の設定
+      headers: {
+        "Content-Type": "text/plain"
+      },
+      body: payload
+    })
+    .then(() => {
+      statusDiv.textContent = "✅ 送信完了！";
+      statusDiv.style.color = "green";
+      setTimeout(() => {
+        btn.disabled = false;
+        statusDiv.textContent = "";
+      }, 3000); // 3秒後にボタン再有効化
+    })
+    .catch(error => {
+      console.error(error);
+      statusDiv.textContent = "❌ 送信失敗";
+      statusDiv.style.color = "red";
+      btn.disabled = false;
+    });
+  };
+</script>
+
 </body>
 </html>
